@@ -11,8 +11,9 @@ double previousCloseBarTime;
 int longOrderTicket;
 int shortOrderTicket;
 int tick = 0;
-int pipTakeprofit = 200;
+int pipTakeprofit = 30;
 int pipStopLoss = -1000;
+double lastFailingTrade;
 double lots = 0.03;
 string trendDirection = "";
 
@@ -104,10 +105,13 @@ void OnTick()
     if (shortOrderTicket == NULL || longOrderTicket == NULL) {
 
         if (previousCloseBarTime != Time[0]
+            && Ask > haClose_H1
+            && Time[0] != lastFailingTrade
             && haClose_H4 > haOpen_H4
+            && haClose_M15 > haOpen_M15
             && longOrderTicket == NULL
             && prevMacd_H1 < macdBase_H1
-            && prevMacd_H1 < prevMacdSignalLine_H1
+            // && prevMacd_H1 < prevMacdSignalLine_H1
             && macdSignalLine_H1 <= macdBase_H1) {
 
             longOrderTicket = OrderSend(NULL, OP_BUY, lots, Ask, 3, 0, 0, "Buy Test", 0, 0, Green);
@@ -115,9 +119,10 @@ void OnTick()
 
         if (previousCloseBarTime != Time[0]
             && haClose_H4 < haOpen_H4
+            && haClose_M30 < haOpen_M30
             && shortOrderTicket == NULL
             && prevMacd_H1 > macdBase_H1
-            && prevMacd_H1 > prevMacdSignalLine_H1
+            // && prevMacd_H1 > prevMacdSignalLine_H1
             && macdSignalLine_H1 >= macdBase_H1) {
 
             shortOrderTicket = OrderSend(NULL, OP_SELL, lots, Bid, 2, 0, 0, "Sell Test", 0, 0, Green);
@@ -135,30 +140,22 @@ void OnTick()
             pips = (int)((Bid - OrderOpenPrice()) / Point);
 
             // Prevent loosing more money
-            if (pips <= pipStopLoss || trendDirection == "Down") {
+            if (pips <= pipStopLoss) {
                 if(!OrderClose(longOrderTicket, OrderLots(), Bid, 3, Red)) {
                     Print("Error closing order", GetLastError());
                 }
+                lastFailingTrade = Time[0];
                 longOrderTicket = NULL;
             }
 
             // Take the money
-            if (AccountEquity() >= takeProfit) {
+            if (AccountEquity() >= takeProfit || pips >= pipTakeprofit) {
                 if(!OrderClose(longOrderTicket, OrderLots(), Bid, 3, Red)) {
                     Print("Error closing order", GetLastError());
                 }
                 longOrderTicket = NULL;
             }
 
-            // Prevent premature take profit.
-
-            // Take profit
-            if (pips >= pipTakeprofit) {
-                if(!OrderClose(longOrderTicket, OrderLots(), Bid, 3, Red)) {
-                    Print("Error closing order", GetLastError());
-                }
-                longOrderTicket = NULL;
-            }
         }
     }
 
@@ -170,7 +167,7 @@ void OnTick()
             pips = (int)((OrderOpenPrice() - Ask) / Point);
 
             // Prevent loosing more money
-            if (pips <= pipStopLoss || trendDirection == "Up") {
+            if (pips <= pipStopLoss || haClose_M15 > haOpen_M15) {
                 if(!OrderClose(shortOrderTicket, OrderLots(), Ask, 3, Red)) {
                     Print("Error closing order", GetLastError());
                 }
@@ -178,16 +175,7 @@ void OnTick()
             }
 
             // Take the money
-            if (AccountEquity() >= takeProfit) {
-                if(!OrderClose(shortOrderTicket, OrderLots(), Ask, 3, Red)) {
-                    Print("Error closing order", GetLastError());
-                }
-                shortOrderTicket = NULL;
-            }
-
-
-            // Take profit
-            if (pips >= pipTakeprofit) {
+            if (AccountEquity() >= takeProfit || pips >= pipTakeprofit) {
                 if(!OrderClose(shortOrderTicket, OrderLots(), Ask, 3, Red)) {
                     Print("Error closing order", GetLastError());
                 }
