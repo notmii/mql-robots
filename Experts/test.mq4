@@ -89,20 +89,21 @@ void OnTick()
     tick++;
 
     Comment(
-        "Balance: ", AccountBalance(),
-        "\nEquity: ", AccountEquity(),
+        "Balance: ", NormalizeDouble(AccountBalance(), 5),
+        "\nEquity: ", NormalizeDouble(AccountEquity(), 5),
         "\nMargin: ", AccountMargin(),
         "\nPips: ", pips,
         "\nCheckpoint: ", checkpoint,
-        "\nTake Profit: ", takeProfit,
-        "\nStop Loss: ", stopLoss
+        "\nTake Profit: ", NormalizeDouble(takeProfit, 5),
+        "\nStop Loss: ", NormalizeDouble(stopLoss, 5)
     );
 
     if (OrdersTotal() == 0) {
 
-        if (prevMacd_H1 < macdBase_H1
-            && prevMacd_H1 < prevMacdSignalLine_H1
-            && macdSignalLine_H1 < macdBase_H1) {
+        if (previousCloseBarTime != Time[0]
+            && prevMacd_H1 < macdBase_H1
+            && macdSignalLine_H1 < macdBase_H1
+            && prevMacd_H1 <= prevMacdSignalLine_H1) {
 
             orderTicket = OrderSend(NULL, OP_BUY, lots, Ask, 3, 0, 0, "Buy Test", 0, 0, Green);
             openMacdBase_H1 = macdBase_H1;
@@ -123,26 +124,19 @@ void OnTick()
 
     } else {
 
-        if (tick <= 20) {
+        if (tick <= 40) {
             return;
         }
-
-        // if (openBarTime == Time[0]) {
-        //     return;
-        // }
 
         if (!OrderSelect(orderTicket, SELECT_BY_TICKET, MODE_TRADES)) {
             Print("Error selecting order", GetLastError());
             return;
         }
 
-        // highestProfit = highestProfit < OrderProfit() ?
-        //     OrderProfit() : highestProfit;
-        // perc5 = highestProfit - highestProfit * 0.05;
-
         if (OrderType() == OP_BUY) {
 
-            if (AccountEquity() <= stopLoss) {
+            // Prevent loosing more money
+            if (AccountEquity() <= stopLoss || macdBase_H1 <= macdSignalLine_H1) {
                 if(!OrderClose(orderTicket, OrderLots(), Bid, 3, Red)) {
                     Print("Error closing order", GetLastError());
                 }
@@ -151,15 +145,25 @@ void OnTick()
                 checkpoint = 0;
             }
 
+            // Take the money
+            if (AccountEquity() >= takeProfit) {
+                if(!OrderClose(orderTicket, OrderLots(), Bid, 3, Red)) {
+                    Print("Error closing order", GetLastError());
+                }
+                previousCloseBarTime = Time[0];
+                pips = 0;
+                checkpoint = 0;
+            }
 
+            // Prevent premature take profit.
             pips = (int)((Bid - OrderOpenPrice()) / Point);
-
-            if (pips > checkpoint) {
+            if (pips > checkpoint && prevMacd_H1 <= macdBase_H1 && openMacdBase_H1 < macdBase_H1) {
                 checkpoint = pips;
                 return;
             }
 
-            if ((pips >= 100 && OrderProfit() > 0) || OrderProfit() >= takeProfit) {
+            // Take profit
+            if ((pips >= 100 && OrderProfit() > 0)) {
                 if(!OrderClose(orderTicket, OrderLots(), Bid, 3, Red)) {
                     Print("Error closing order", GetLastError());
                 }
@@ -167,14 +171,6 @@ void OnTick()
                 pips = 0;
                 checkpoint = 0;
             }
-
-            // if (AccountEquity() >= takeProfit || AccountEquity() <= stopLoss) {
-            //     if(!OrderClose(orderTicket, OrderLots(), Bid, 3, Red)) {
-            //         Print("Error closing order", GetLastError());
-            //     }
-            //     previousCloseBarTime = Time[0];
-            //     return;
-            // }
 
             // If still trending up.
             // if (prevMacd_H1 <= macdBase_H1 && openMacdBase_H1 < macdBase_H1) {
