@@ -1,9 +1,9 @@
 <chart>
-id=130888602316263580
-comment=    Balance: 183.77
+id=130889321760060960
+comment=    Balance: 200.0
 symbol=AUDUSD
 period=60
-leftpos=2020
+leftpos=871
 offline=1
 digits=5
 scale=8
@@ -20,10 +20,10 @@ days=0
 descriptions=0
 shift_size=20
 fixed_pos=0
-window_left=330
-window_top=330
-window_right=1256
-window_bottom=1066
+window_left=66
+window_top=66
+window_right=1278
+window_bottom=393
 window_type=3
 background_color=0
 foreground_color=55295
@@ -38,7 +38,7 @@ askline_color=255
 stops_color=255
 
 <window>
-height=153
+height=168
 fixed_height=0
 <indicator>
 name=main
@@ -79,10 +79,22 @@ weight_3=3
 period_flags=0
 show_data=1
 </indicator>
+<indicator>
+name=Moving Average
+period=20
+shift=0
+method=1
+apply=0
+color=13828244
+style=0
+weight=1
+period_flags=0
+show_data=1
+</indicator>
 </window>
 
 <window>
-height=46
+height=50
 fixed_height=0
 <indicator>
 name=MACD
@@ -92,27 +104,10 @@ macd_sma=9
 apply=0
 color=12632256
 style=0
-weight=2
-signal_color=255
-signal_style=0
-signal_weight=1
-period_flags=0
-show_data=1
-</indicator>
-</window>
-
-<window>
-height=45
-fixed_height=0
-<indicator>
-name=Volumes
-color=16777215
-style=0
 weight=3
-color2=16777215
-style2=0
-weight2=3
-min=0.000000
+signal_color=255
+signal_style=2
+signal_weight=1
 period_flags=0
 show_data=1
 </indicator>
