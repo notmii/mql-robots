@@ -39,12 +39,13 @@ double highest,
     lastClose;
 
 double tradeLots,
-    baseTradeLots = 0.01;
+    baseTradeLots = 0.02;
 
 double diff,
     lastCloseTime,
     balanceToDefend;
-bool hedgeMode = false;
+bool hedgeMode = false,
+    defensePosition = false;
 
 int ticketNumber;
 
@@ -96,7 +97,29 @@ void displayComment() {
     );
 }
 
-void hedgePosition() {
+void counterAttack() {
+    double equity = AccountEquity();
+}
+
+void defendBalance() {
+    OrderSelect(0, SELECT_BY_POS);
+    ticketNumber = OrderTicket();
+    OrderModify(ticketNumber, OrderOpenPrice(), 0, 0, 0, Red);
+
+    int newOrderType = OrderType() == OP_BUY ? OP_SELL : OP_BUY;
+    double newOrderPrice = OrderType() == OP_BUY ? Bid : Ask;
+
+    ticketNumber = OrderSend(NULL, newOrderType, baseTradeLots * 10, newOrderPrice, 0, 0, 0, "Defend Position", 0, 0, Green);
+    defensePosition = true;
+}
+
+void hedgePosition()
+{
+    if (defensePosition && OrdersTotal() == 2) {
+        counterAttack();
+        return;
+    }
+
     if (OrdersTotal() == 0 || OrdersTotal() == 2) {
         return;
     }
@@ -112,6 +135,11 @@ void hedgePosition() {
             double closePrice = OrderType() == OP_BUY ? Bid : Ask;
             OrderClose(ticketNumber, OrderLots(), closePrice, 3, Red);
         }
+        return;
+    }
+
+    if (OrdersTotal() == 1 && hedgeMode) {
+        defendBalance();
         return;
     }
 
