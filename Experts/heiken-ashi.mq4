@@ -39,7 +39,7 @@ double highest,
     lastClose;
 
 double tradeLots,
-    baseTradeLots = 0.02;
+    baseTradeLots = 0.01;
 
 double diff,
     lastCloseTime,
@@ -89,6 +89,8 @@ void displayComment() {
         "\n    Margin Level: ", AccountEquity() > 0 && AccountMargin() > 0 ?
             (int)((AccountEquity() / AccountMargin()) * 100) : "", "%",
         "\n    Leverage: 1:", AccountLeverage(),
+        "\n    Spread: ", (int)((Ask - Bid) / Point),
+        "\n    Defend: ", balanceToDefend,
         "\n",
         "\n    Master Trend: ", haPrevClose_H4 > haPrevOpen_H4 ? "UP" : "DOWN",
         "\n    Primary Trend: ", haPrevClose_H1 > haPrevOpen_H1 ? "UP" : "DOWN",
@@ -102,6 +104,7 @@ void counterAttack() {
 }
 
 void defendBalance() {
+    return;
     OrderSelect(0, SELECT_BY_POS);
     ticketNumber = OrderTicket();
     OrderModify(ticketNumber, OrderOpenPrice(), 0, 0, 0, Red);
@@ -127,7 +130,7 @@ void hedgePosition()
     OrderSelect(OrdersTotal() - 1, SELECT_BY_POS);
     ticketNumber = OrderTicket();
 
-    if (AccountEquity() > balanceToDefend && balanceToDefend != NULL && hedgeMode) {
+    if (AccountEquity() >= balanceToDefend && balanceToDefend != NULL && hedgeMode) {
         Print("Close All");
         for (int index = 0; index < OrdersTotal(); index++) {
             OrderSelect(index, SELECT_BY_POS);
@@ -152,7 +155,6 @@ void hedgePosition()
 
     switch(OrderType()) {
         case OP_BUY:
-            Print("Hedge Buy");
             if (MathAbs(Bid - OrderOpenPrice()) / Point > trueRangeInPip
                 && haPrevClose_H1 < haPrevOpen_H1
                 && haClose_H1 < haOpen_H1
@@ -170,7 +172,6 @@ void hedgePosition()
             break;
 
         case OP_SELL:
-            Print("Hedge Sell");
             if (MathAbs(Ask - OrderOpenPrice()) / Point > trueRangeInPip
                 && haPrevClose_H1 > haPrevOpen_H1
                 && haClose_H1 > haOpen_H1
