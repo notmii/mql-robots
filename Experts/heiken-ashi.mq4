@@ -32,22 +32,21 @@ double haPrevOpen_H4,
 double avgTrueRange_D1,
     trueRange_D1;
 
-double highest,
-    highestBuffer,
-    lowest,
-    lowestBuffer,
-    lastClose;
-
-double tradeLots,
-    baseTradeLots = 0.02;
+double tradeLots;
 
 double diff,
     lastCloseTime,
-    balanceToDefend;
+    balanceToDefend,
+    totalBuyLot,
+    totalSelLot;
+
 bool hedgeMode = false,
     defensePosition = false;
 
 int ticketNumber;
+
+input double hedgeMultiplier = 2;
+input double baseTradeLots = 0.01;
 
 void computeIndicators()
 {
@@ -93,66 +92,62 @@ void displayComment() {
         "\n    Master Trend: ", haPrevClose_H4 > haPrevOpen_H4 ? "UP" : "DOWN",
         "\n    Primary Trend: ", haPrevClose_H1 > haPrevOpen_H1 ? "UP" : "DOWN",
         "\n    EMA(20): ", Bid > ema20_H1 ? "UP" : "DOWN",
+        "\n    ATR_D1: ", (int)(avgTrueRange_D1 / Point),
+        "\n",
+        "\n    Def Balance: ", balanceToDefend,
+        "\n    Last Ticket: ", ticketNumber,
+        "\n    Hedge: ", hedgeMode,
+        "\n    Orders Total: ", NormalizeDouble(OrdersTotal(), 5),
+        "\n    Total Buy: ", totalBuyLot,
+        "\n    Total Sel: ", totalSelLot,
         ""
     );
 }
 
-void counterAttack() {
-    double equity = AccountEquity();
+void closeAllOpen() {
+    for (int index = 0; index < OrdersTotal(); index++) {
+        OrderSelect(index, SELECT_BY_POS);
+        ticketNumber = OrderTicket();
+        double closePrice = OrderType() == OP_BUY ? Bid : Ask;
+        OrderClose(ticketNumber, OrderLots(), closePrice, 3, Red);
+    }
+    ticketNumber = NULL;
 }
 
-void defendBalance() {
-    OrderSelect(0, SELECT_BY_POS);
-    ticketNumber = OrderTicket();
-    OrderModify(ticketNumber, OrderOpenPrice(), 0, 0, 0, Red);
-
-    int newOrderType = OrderType() == OP_BUY ? OP_SELL : OP_BUY;
-    double newOrderPrice = OrderType() == OP_BUY ? Bid : Ask;
-
-    ticketNumber = OrderSend(NULL, newOrderType, baseTradeLots * 10, newOrderPrice, 0, 0, 0, "Defend Position", 0, 0, Green);
-    defensePosition = true;
+void computeOpenLots() {
+    totalBuyLot = 0;
+    totalSelLot = 0;
+    for (int index = 0; index < OrdersTotal(); index++) {
+        OrderSelect(index, SELECT_BY_POS);
+        if (OrderType() == OP_BUY) {
+            totalBuyLot += OrderLots();
+        } else if (OrderType() == OP_SELL) {
+            totalSelLot += OrderLots();
+        }
+    }
 }
 
 void hedgePosition()
 {
-    if (defensePosition && OrdersTotal() == 2) {
-        counterAttack();
+    if (AccountEquity() > balanceToDefend && hedgeMode) {
+        closeAllOpen();
         return;
     }
 
-    if (OrdersTotal() == 0 || OrdersTotal() == 2) {
+    if (OrdersTotal() == 0 || OrdersTotal() == 4 || balanceToDefend == NULL) {
         return;
     }
 
     OrderSelect(OrdersTotal() - 1, SELECT_BY_POS);
-    ticketNumber = OrderTicket();
 
-    if (AccountEquity() > balanceToDefend && balanceToDefend != NULL && hedgeMode) {
-        Print("Close All");
-        for (int index = 0; index < OrdersTotal(); index++) {
-            OrderSelect(index, SELECT_BY_POS);
-            ticketNumber = OrderTicket();
-            double closePrice = OrderType() == OP_BUY ? Bid : Ask;
-            OrderClose(ticketNumber, OrderLots(), closePrice, 3, Red);
-        }
-        return;
-    }
-
-    if (OrdersTotal() == 1 && hedgeMode) {
-        defendBalance();
-        return;
-    }
-
-    if (OrderProfit() > 0 || hedgeMode) {
+    if (OrderProfit() > 0) {
         return;
     }
 
     double trueRangeInPip = ((avgTrueRange_D1 / 2) / Point);
-    double hedgeMultiplier = 10;
 
     switch(OrderType()) {
         case OP_BUY:
-            Print("Hedge Buy");
             if (MathAbs(Bid - OrderOpenPrice()) / Point > trueRangeInPip
                 && haPrevClose_H1 < haPrevOpen_H1
                 && haClose_H1 < haOpen_H1
@@ -162,15 +157,13 @@ void hedgePosition()
                 && macdPrevBase_M15 < macdBase_M15
                 && Close[0] < Open[0]) {
 
-                ticketNumber = OrderSend(NULL, OP_SELL, baseTradeLots * hedgeMultiplier, Bid, 3, 0, 0, "Sell to hedge", 0, 0, Green);
+                ticketNumber = OrderSend(NULL, OP_SELL, totalBuyLot * hedgeMultiplier, Bid, 3, 0, 0, "Sell to hedge", 0, 0, Green);
                 OrderModify(ticketNumber, OrderOpenPrice(), Bid + avgTrueRange_D1 * 3, Bid - trueRange_D1, 0, Red);
-                balanceToDefend = AccountBalance();
                 hedgeMode = true;
             }
             break;
 
         case OP_SELL:
-            Print("Hedge Sell");
             if (MathAbs(Ask - OrderOpenPrice()) / Point > trueRangeInPip
                 && haPrevClose_H1 > haPrevOpen_H1
                 && haClose_H1 > haOpen_H1
@@ -180,9 +173,8 @@ void hedgePosition()
                 && macdPrevBase_M15 < macdBase_M15
                 && Close[0] > Open[0]) {
 
-                ticketNumber = OrderSend(NULL, OP_BUY, baseTradeLots * hedgeMultiplier, Ask, 3, 0, 0, "Buy to hedge", 0, 0, Green);
+                ticketNumber = OrderSend(NULL, OP_BUY, totalSelLot * hedgeMultiplier, Ask, 3, 0, 0, "Buy to hedge", 0, 0, Green);
                 OrderModify(ticketNumber, OrderOpenPrice(), Ask - avgTrueRange_D1 * 3, Ask + trueRange_D1, 0, Red);
-                balanceToDefend = AccountBalance();
                 hedgeMode = true;
             }
             break;
@@ -190,39 +182,12 @@ void hedgePosition()
 
 }
 
-void closePositions() {
-    for (int position = 0; position < OrdersTotal(); position++) {
-        OrderSelect(position, SELECT_BY_POS);
-        ticketNumber = OrderTicket();
-
-        switch (OrderType()) {
-            case OP_BUY:
-                if (Close[0] < Open[0]
-                    && OrderProfit() > 0) {
-
-                    OrderClose(ticketNumber, OrderLots(), Bid, 3, Red);
-                    lastCloseTime = Time[0];
-
-                }
-                break;
-
-            case OP_SELL:
-                if (Close[0] > Open[0]
-                    && OrderProfit() > 0) {
-
-                    OrderClose(ticketNumber, OrderLots(), Ask, 3, Red);
-                    lastCloseTime = Time[0];
-
-                }
-                break;
-        }
-    }
-}
-
 void openPosition() {
     if (OrdersTotal() > 0 || lastCloseTime == Time[0]) {
         return;
     }
+
+    balanceToDefend = AccountBalance();
 
     if (haPrevClose_H4 > haPrevOpen_H4
         && haPrevClose_H1 > haPrevOpen_H1
@@ -265,10 +230,8 @@ void OnTick()
 {
     computeIndicators();
     displayComment();
-
-    // closePositions();
+    computeOpenLots();
     hedgePosition();
     openPosition();
-
     displayComment();
 }
