@@ -1,9 +1,9 @@
 <chart>
-id=130896586486283240
-comment=    Balance: 308.27
+id=130902138716473231
+comment=    Balance: 290.816
 symbol=AUDUSD
 period=15
-leftpos=1224
+leftpos=1580
 offline=1
 digits=5
 scale=8
@@ -15,6 +15,7 @@ scroll=1
 shift=1
 ohlc=1
 one_click=0
+one_click_btn=0
 askline=0
 days=0
 descriptions=1
@@ -64,6 +65,26 @@ apply=0
 color=65535
 style=0
 weight=1
+period_flags=0
+show_data=1
+</indicator>
+</window>
+
+<window>
+height=50
+fixed_height=0
+<indicator>
+name=MACD
+fast_ema=6
+slow_ema=13
+macd_sma=5
+apply=0
+color=12632256
+style=0
+weight=3
+signal_color=255
+signal_style=2
+signal_weight=1
 period_flags=0
 show_data=1
 </indicator>
