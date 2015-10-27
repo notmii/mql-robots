@@ -44,6 +44,7 @@ double tradeLots;
 double diff,
     lastCloseTime,
     balanceToDefend;
+int failTrades = 0;
 
 bool hedgeMode = false;
 
@@ -54,11 +55,11 @@ input double hedgeMultiplier = 10;
 input int takeProfit = 50;
 input int stopLoss = 150;
 input int martingaleGrid = 100;
+input int maxMartingaleTrade = 3;
 
 double _takeProfit, _stopLoss, _martingaleGrid, previousLots;
 
-void computeIndicators()
-{
+void computeIndicators() {
     // M15 Indicators
     haOpen_M5 = iCustom(NULL, PERIOD_M5, "Heiken Ashi", 2, 0);
     haClose_M5 = iCustom(NULL, PERIOD_M5, "Heiken Ashi", 3, 0);
@@ -107,6 +108,8 @@ void displayComment() {
         "\n    Primary Trend: ", haPrevClose_H1 > haPrevOpen_H1 ? "UP" : "DOWN",
         "\n    EMA(20): ", Bid > ema20_H1 ? "UP" : "DOWN",
         "\n    Previous Lots: ", previousLots,
+        "\n    Fail Total: ", (int)failTrades,
+        "\n    Hedge Mode: ", hedgeMode,
         ""
     );
 }
@@ -121,6 +124,19 @@ void closeAllOpen() {
     }
 }
 
+void blah() {
+    if (OrderProfit() < 0) {
+        failTrades++;
+        hedgeMode = failTrades <= maxMartingaleTrade;
+        failTrades = hedgeMode ? failTrades : 0;
+    } else {
+        hedgeMode = false;
+        failTrades = 0;
+    }
+
+    closeAllOpen();
+}
+
 void martingale() {
     if (OrdersTotal() == 0) {
         return;
@@ -129,17 +145,11 @@ void martingale() {
     OrderSelect(0, SELECT_BY_POS);
 
     if (OrderType() == OP_BUY && (MathAbs(Bid - OrderOpenPrice()) / Point) >= martingaleGrid) {
-        if (OrderProfit() < 0) {
-            hedgeMode = true;
-        }
-        closeAllOpen();
+        blah();
     }
 
     if (OrderType() == OP_SELL && (MathAbs(Ask - OrderOpenPrice()) / Point) >= martingaleGrid) {
-        if (OrderProfit() < 0) {
-            hedgeMode = true;
-        }
-        closeAllOpen();
+        blah();
     }
 }
 
@@ -150,29 +160,37 @@ void openPosition() {
 
     balanceToDefend = hedgeMode ? balanceToDefend : AccountBalance();
     double lots = hedgeMode ? previousLots * 2 : baseTradeLots;
-    double profit = hedgeMode ? _martingaleGrid : _takeProfit;
 
     if (haPrevClose_H4 > haPrevOpen_H4
         && haPrevClose_H1 > haPrevOpen_H1
-        && haClose_H1 > haOpen_H1
-        && macdPrevBase_M5 > 0
+        // && haClose_H1 > haOpen_H1
+        // && macdPrevBase_M5 > 0
         && macdPrevBase_M5 < macdBase_M5) {
 
-        ticketNumber = OrderSend(NULL, OP_BUY, lots, Ask, 3, 0, 0, "Buy Test", 0, 0, Green);
-        OrderModify(ticketNumber, OrderOpenPrice(), 0, Ask + profit, 0, Red);
-        hedgeMode = false;
+        ticketNumber = OrderSend(NULL, OP_BUY, lots, Ask, 3, 0, 0, "Buy", 0, 0, Green);
+
+        if (!hedgeMode) {
+            OrderModify(ticketNumber, OrderOpenPrice(), 0, Ask + _takeProfit, 0, Red);
+            hedgeMode = false;
+            failTrades = 0;
+        }
+
         previousLots = lots;
     }
 
     if (haPrevClose_H4 < haPrevOpen_H4
         && haPrevClose_H1 < haPrevOpen_H1
-        && haClose_H1 < haOpen_H1
-        && macdPrevBase_M5 < 0
+        // && haClose_H1 < haOpen_H1
+        // && macdPrevBase_M5 < 0
         && macdPrevBase_M5 < macdBase_M5) {
 
-        ticketNumber = OrderSend(NULL, OP_SELL, lots, Bid, 3, 0, 0, "Sell Test", 0, 0, Green);
-        OrderModify(ticketNumber, OrderOpenPrice(), 0, Bid - profit, 0, Red);
-        hedgeMode = false;
+        ticketNumber = OrderSend(NULL, OP_SELL, lots, Bid, 3, 0, 0, "Sell", 0, 0, Green);
+        if (!hedgeMode) {
+            OrderModify(ticketNumber, OrderOpenPrice(), 0, Bid - _takeProfit, 0, Red);
+            hedgeMode = false;
+            failTrades = 0;
+        }
+
         previousLots = lots;
     }
 }
