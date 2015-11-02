@@ -1,9 +1,9 @@
 <chart>
-id=130908492049792101
-comment=    Balance: 196.8137
+id=130909365632349071
+comment=    Balance: 211.374
 symbol=AUDUSD
 period=60
-leftpos=1053
+leftpos=1131
 offline=1
 digits=5
 scale=8
@@ -21,10 +21,10 @@ days=0
 descriptions=1
 shift_size=20
 fixed_pos=0
-window_left=154
-window_top=154
-window_right=1366
-window_bottom=467
+window_left=44
+window_top=44
+window_right=1256
+window_bottom=357
 window_type=3
 background_color=0
 foreground_color=65535
@@ -101,6 +101,31 @@ draw_3=2
 color_3=16777215
 style_3=0
 weight_3=3
+period_flags=0
+show_data=1
+</indicator>
+</window>
+
+<window>
+height=50
+fixed_height=0
+<indicator>
+name=Average Directional Movement Index
+period=8
+apply=0
+color=11186720
+style=0
+weight=1
+color2=64636
+style2=0
+weight2=1
+color3=17919
+style3=0
+weight3=1
+levels_color=12632256
+levels_style=2
+levels_weight=1
+level_0=25.0000
 period_flags=0
 show_data=1
 </indicator>

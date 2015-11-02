@@ -18,7 +18,8 @@ double haOpen_H1,
    haClose_H1,
    haPrevOpen_H1,
    haPrevClose_H1,
-   ema20_H1;
+   ema20_H1,
+   adxMain_H1;
 
 // H4 Indicators
 double haPrevOpen_H4,
@@ -45,6 +46,7 @@ int ticketNumber;
 
 input double baseTradeLots = 0.01;
 input double hedgeMultiplier = 10;
+input int adxMainTrigger = 25;
 input int validHeikenshiBar = 50;
 input int trailingStop = 10;
 
@@ -58,10 +60,10 @@ int OnInit() {
 void OnTick() {
     computeIndicators();
     displayComment();
-    tailStop();
+    // tailStop();
     closePosition();
     openPosition();
-    tailStop();
+    // tailStop();
     displayComment();
 }
 
@@ -82,6 +84,7 @@ void computeIndicators() {
     haPrevOpen_H1 = iCustom(NULL, PERIOD_H1, "Heiken Ashi", 2, 1);
     haPrevClose_H1 = iCustom(NULL, PERIOD_H1, "Heiken Ashi", 3, 1);
     ema20_H1 = iMA(NULL, PERIOD_H1, 20, 0, MODE_EMA, PRICE_CLOSE, 0);
+    adxMain_H1 = iADX(NULL, PERIOD_H1, 8, PRICE_CLOSE, MODE_MAIN,  0);
 
     // H4 Indicators
     haPrevOpen_H4 = iCustom(NULL, PERIOD_H4, "Heiken Ashi", 2, 1);
@@ -122,10 +125,11 @@ void closeAllOpen() {
 bool isValidForLongPosition() {
     return
         (haPrevClose_H1 - haPrevOpen_H1) / Point > validHeikenshiBar
-        && haPrevClose_H4 > haPrevOpen_H4
+        // && haPrevClose_H4 > haPrevOpen_H4
+        && adxMain_H1 >= adxMainTrigger
         && haPrevClose_H1 > haPrevOpen_H1
-        && haClose_H1 > haOpen_H1
-        // && haPrevClose_M15 > haPrevOpen_M15
+        // && haClose_H1 > haOpen_H1
+        && haPrevClose_M15 > haPrevOpen_M15
         && haClose_M15 > haOpen_M15
         // && macdPrevBase_M15 > 0
         && macdPrevBase_M15 < macdBase_M15
@@ -135,10 +139,11 @@ bool isValidForLongPosition() {
 bool isValidForShortPosition() {
     return
         (haPrevOpen_H1 - haPrevClose_H1) / Point > validHeikenshiBar
-        && haPrevClose_H4 < haPrevOpen_H4
+        // && haPrevClose_H4 < haPrevOpen_H4
+        && adxMain_H1 >= adxMainTrigger
         && haPrevClose_H1 < haPrevOpen_H1
-        && haClose_H1 < haOpen_H1
-        // && haPrevClose_M15 < haPrevOpen_M15
+        // && haClose_H1 < haOpen_H1
+        && haPrevClose_M15 < haPrevOpen_M15
         && haClose_M15 < haOpen_M15
         // && macdPrevBase_M15 < 0
         && macdPrevBase_M15 < macdBase_M15
@@ -175,7 +180,6 @@ void closePosition() {
 
     OrderSelect(0, SELECT_BY_POS);
     if (OrderType() == OP_BUY
-        && OrderProfit() < 0
         && !isValidForLongPosition()
         && MathAbs(OrderOpenPrice() - Bid) >= trueRange_D1) {
         OrderClose(ticketNumber, OrderLots(), Bid, 3, Red);
@@ -183,7 +187,6 @@ void closePosition() {
     }
 
     if (OrderType() == OP_SELL
-        && OrderProfit() < 0
         && !isValidForShortPosition()
         && MathAbs(OrderOpenPrice() - Ask) >= trueRange_D1) {
         OrderClose(ticketNumber, OrderLots(), Ask, 3, Red);
