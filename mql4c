@@ -1,0 +1,2 @@
+#!/bin/bash
+wine /usr/local/share/mql/mql.exe /mql4 $@

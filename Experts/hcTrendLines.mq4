@@ -3,6 +3,8 @@
 #property version   "1.00"
 #property strict
 
+double BUFFER = 0.00100;
+
 double baseLots = 0.01,
     lots = baseLots;
 
@@ -10,7 +12,10 @@ double baseLots = 0.01,
 double ma48high_H1,
     ma48high_prev_H1,
     ma48low_H1,
-    ma48low_prev_H1;
+    ma48low_prev_H1,
+    parabolic_H1,
+    highDiff,
+    lowDiff;
 
 double balanceBeforeOpen,
     highestBalance;
@@ -33,6 +38,10 @@ void computeIndicators()
 
     ma48high_prev_H1 = iMA(NULL, PERIOD_H1, 48, 0, MODE_EMA, PRICE_HIGH, 1);
     ma48low_prev_H1 = iMA(NULL, PERIOD_H1, 48, 0, MODE_EMA, PRICE_LOW, 1);
+
+    parabolic_H1 = iSAR(NULL, PERIOD_H1, .02, .2, 0);
+    highDiff = Close[0] - ma48high_H1;
+    lowDiff =  ma48low_H1 - Close[0];
 
     // H4 Indicators
     // haPrevOpen_H4 = iCustom(NULL, PERIOD_H4, "Heiken Ashi", 2, 1);
@@ -58,6 +67,8 @@ void displayValues()
         "\n",
         "\n    Lots: ", lots,
         "\n    H.Balance: ", highestBalance,
+        "\n    High: ", highDiff,
+        "\n    Low: ", lowDiff,
         "\n",
         ""
     );
@@ -70,7 +81,9 @@ void openTrade()
     }
 
     if (Close[0] > ma48high_H1 &&
-        Close[1] > ma48high_prev_H1) {
+        Close[1] > ma48high_prev_H1 &&
+        // Close[0] > parabolic_H1 &&
+        highDiff < BUFFER) {
         Print("Buy position now!");
         // SendNotification("Buy position now!");
         // PlaySound("expert.wav");
@@ -84,7 +97,9 @@ void openTrade()
     }
 
     if (Close[0] < ma48low_H1 &&
-        Close[1] < ma48low_prev_H1) {
+        Close[1] < ma48low_prev_H1 &&
+        // Close[0] < parabolic_H1 &&
+        lowDiff < BUFFER) {
         Print("Sell position now!");
         // SendNotification("Sell position now!");
         // PlaySound("expert.wav");
@@ -94,15 +109,8 @@ void openTrade()
     }
 }
 
-void computeNextLot()
-{
-    if (OrderProfit() > 0 && highestBalance < AccountEquity()) {
-        lots = baseLots;
-    }
-
-    if (OrderProfit() < 0) {
-        lots *= 2;
-    }
+void computeNextLot() {
+    lots = OrderProfit() > 0 ? baseLots : lots * 2;
 }
 
 void closeTrade()
@@ -139,6 +147,7 @@ int OnInit()
 {
     computeIndicators();
     highestBalance = AccountBalance();
+    // baseLots = (int)(AccountBalance() / 200) * 0.01;
     return(INIT_SUCCEEDED);
 }
 
