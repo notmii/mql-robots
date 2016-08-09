@@ -164,7 +164,7 @@ void closeTrade()
     if (orderType == OP_BUY) {
         // (Close[0] < ma48high_H1 && OrderProfit() > 0) ||
         if ((haClose_H1 < haOpen_H1 && OrderProfit() > 0) ||
-            (Close[0] < ma48low_H1)) {
+            (Close[0] < ma48low_H1 && Bars != barOpen)) {
             computeNextLot();
             dataScienceMistakes();
             OrderClose(ticket, OrderLots(), Bid, 3, Red);
@@ -174,7 +174,7 @@ void closeTrade()
     if (orderType == OP_SELL) {
         // (Close[0] > ma48low_H1 && OrderProfit() > 0) ||
         if ((haClose_H1 > haOpen_H1 && OrderProfit() > 0) ||
-            (Close[0] > ma48high_H1)) {
+            (Close[0] > ma48high_H1 && Bars != barOpen)) {
             computeNextLot();
             dataScienceMistakes();
             OrderClose(ticket, OrderLots(), Ask, 3, Red);

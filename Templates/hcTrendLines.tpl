@@ -1,12 +1,12 @@
 <chart>
 id=131151980570159591
-comment=    Balance: 197.98
+comment=    Balance: 191.9909
 symbol=AUDUSD
 period=60
-leftpos=657
+leftpos=1093
 offline=1
 digits=5
-scale=4
+scale=16
 graph=0
 fore=1
 grid=1
@@ -21,10 +21,10 @@ days=1
 descriptions=0
 shift_size=20
 fixed_pos=0
-window_left=176
-window_top=176
-window_right=1876
-window_bottom=681
+window_left=44
+window_top=44
+window_right=1744
+window_bottom=517
 window_type=3
 background_color=13224393
 foreground_color=0
@@ -101,6 +101,18 @@ draw_3=2
 color_3=16777215
 style_3=0
 weight_3=3
+period_flags=0
+show_data=1
+</indicator>
+<indicator>
+name=Moving Average
+period=12
+shift=0
+method=1
+apply=4
+color=13828244
+style=0
+weight=2
 period_flags=0
 show_data=1
 </indicator>
