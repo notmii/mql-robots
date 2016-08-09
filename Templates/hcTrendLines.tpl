@@ -1,13 +1,13 @@
 <chart>
-id=131149091795680900
-comment=    Balance: 1278.4015
+id=131151980570159591
+comment=    Balance: 197.98
 symbol=AUDUSD
 period=60
-leftpos=4572
+leftpos=657
 offline=1
 digits=5
 scale=4
-graph=1
+graph=0
 fore=1
 grid=1
 volume=0
@@ -21,10 +21,10 @@ days=1
 descriptions=0
 shift_size=20
 fixed_pos=0
-window_left=66
-window_top=66
-window_right=1744
-window_bottom=570
+window_left=176
+window_top=176
+window_right=1876
+window_bottom=681
 window_type=3
 background_color=13224393
 foreground_color=0
@@ -48,7 +48,7 @@ name=main
 name=Moving Average
 period=48
 shift=0
-method=1
+method=0
 apply=3
 color=36095
 style=0
@@ -60,7 +60,7 @@ show_data=1
 name=Moving Average
 period=48
 shift=0
-method=1
+method=0
 apply=2
 color=36095
 style=0
@@ -69,24 +69,38 @@ period_flags=0
 show_data=1
 </indicator>
 <indicator>
-name=Parabolic SAR
-step=0.0200
-end=0.2000
-color=13382297
-style=0
-weight=2
-period_flags=0
-show_data=1
-</indicator>
-<indicator>
-name=Moving Average
-period=12
-shift=0
-method=1
-apply=4
-color=13434880
-style=0
-weight=1
+name=Custom Indicator
+<expert>
+name=Heiken Ashi
+flags=275
+window_num=0
+<inputs>
+ExtColor1=255
+ExtColor2=16777215
+ExtColor3=255
+ExtColor4=16777215
+</inputs>
+</expert>
+shift_0=0
+draw_0=2
+color_0=255
+style_0=0
+weight_0=1
+shift_1=0
+draw_1=2
+color_1=16777215
+style_1=0
+weight_1=1
+shift_2=0
+draw_2=2
+color_2=255
+style_2=0
+weight_2=3
+shift_3=0
+draw_3=2
+color_3=16777215
+style_3=0
+weight_3=3
 period_flags=0
 show_data=1
 </indicator>
