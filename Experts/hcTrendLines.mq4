@@ -103,7 +103,7 @@ void openTrade()
     if (Close[0] > ma48high_H1 &&
         Low[1] < ma48high_prev_H1 &&
         haClose_H1 > haOpen_H1 &&
-        highDiff < BUFFER) {
+        Low[1] > ma48low_prev_H1) {
         Print("Buy position now!");
         highestBalance = highestBalance < AccountBalance() ?
             AccountBalance() : highestBalance;
@@ -124,7 +124,7 @@ void openTrade()
     if (Close[0] < ma48low_H1 &&
         High[1] > ma48low_prev_H1 &&
         haClose_H1 < haOpen_H1 &&
-        lowDiff < BUFFER) {
+        High[1] < ma48high_prev_H1) {
         Print("Sell position now!");
         highestBalance = highestBalance < AccountBalance() ?
             AccountBalance() : highestBalance;
